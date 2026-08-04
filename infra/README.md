@@ -36,7 +36,7 @@ This directory contains production-grade Terraform code to provision a secure, e
 
 ```bash
 
-&#x20;  terraform init
+terraform init
 
 ```
 
@@ -44,7 +44,7 @@ This directory contains production-grade Terraform code to provision a secure, e
 
 ```bash
 
-&#x20;  terraform plan -var="on_prem_ca_arn=<YOUR_PRIVATE_CA_ARN>"
+terraform plan -var="on_prem_ca_arn=<YOUR_PRIVATE_CA_ARN>"
 
 ```
 
@@ -52,7 +52,7 @@ This directory contains production-grade Terraform code to provision a secure, e
 
 ```bash
 
-&#x20;  terraform apply -var="on_prem_ca_arn=<YOUR_PRIVATE_CA_ARN>"
+terraform apply -var="on_prem_ca_arn=<YOUR_PRIVATE_CA_ARN>"
 
 ```
 
