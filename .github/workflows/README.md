@@ -65,7 +65,8 @@ environments/
 
 We modify the Github Actions workflow to detect which directory changed, dynamically running the jobs against the correct environment inputs:
 
-```text
+```
+
 # Example Multi-Environment Matrix / Directory mapping
 
 on:
