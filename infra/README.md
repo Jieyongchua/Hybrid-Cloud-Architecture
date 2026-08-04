@@ -34,18 +34,26 @@ This directory contains production-grade Terraform code to provision a secure, e
 
 1. Initialize the directory:
 
-&#x20;  ```bash
+```bash
 
 &#x20;  terraform init
 
-&#x20;  ```
+```
 
 2. Inspect the excecution plan:
 
+```bash
+
 &#x20;  terraform plan -var="on_prem_ca_arn=<YOUR_PRIVATE_CA_ARN>"
+
+```
 
 3. Deploy the infrastructure securely:
 
+```bash
+
 &#x20;  terraform apply -var="on_prem_ca_arn=<YOUR_PRIVATE_CA_ARN>"
+
+```
 
 
