@@ -1,0 +1,170 @@
+name: "Terraform CI/CD Ingestion Pipeline"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**.tf"
+      - "**.tfvars"
+  push:
+    branches:
+      - main
+    paths:
+      - "**.tf"
+      - "**.tfvars"
+
+# Required permissions for OIDC token retrieval and PR comments
+permissions:
+  id-token: write      # CRITICAL: Required for requesting the JWT OIDC token from AWS
+  contents: read       # Required to checkout code
+  pull-requests: write # Allows Checkov/Plan status to write feedback directly to PR comments
+
+jobs:
+  # ==========================================
+  # STAGE 1: LINTING & STATIC SECURITY SCANNING
+  # ==========================================
+  security-and-validation:
+    name: "1. Security & Validation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: "Terraform Format Check"
+        run: terraform fmt -check
+
+      - name: "Terraform Validate"
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      # Checkov parses HCL and checks for security misconfigurations before deployment
+      - name: "Run Checkov Static Analysis"
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: terraform
+          output_format: cli
+          soft_fail: false # Hard fail the pipeline if severe security gaps are discovered
+
+
+  # ==========================================
+  # STAGE 1.5: Security Scanner
+  # ==========================================
+
+jobs:
+  static-security-scanner:
+    name: "Static Security Guardrail"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Fetches the current and previous commit to generate a diff
+
+      - name: "Generate Git Diff"
+        run: |
+          git diff HEAD~1 HEAD > changes.diff
+
+      - name: "Run Custom Security Analyzer"
+        run: |
+          python3 scripts/analyze_security.py changes.diff
+	  ## Uncomment for agent base security analysis
+	  # python3 agent.py changes.diff
+
+
+  # ==========================================
+  # STAGE 2: TERRAFORM PLAN & ARTIFACT EXPORT
+  # ==========================================
+  terraform-plan:
+    name: "2. Generate Plan"
+    needs: security-and-validation
+    runs-on: ubuntu-latest
+    env:
+      # These variables tell the AWS Actions SDK to swap the GitHub OIDC Token for short-lived AWS Keys
+      AWS_REGION: "us-east-1"
+      ROLE_TO_ASSUME: "arn:aws:iam::123456789012:role/github-actions-terraform-pipeline"
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "Configure AWS OIDC Credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sigv4
+
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: "Terraform Init"
+        run: terraform init
+
+      # We save the plan as an immutable BINARY artifact so the exact same plan is applied later
+      - name: "Generate Terraform Plan"
+        id: plan
+        run: |
+          terraform plan -var="on_prem_ca_arn=arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/123-abc" -out=tfplan.binary
+
+      # Publish the binary plan as a workflow artifact
+      - name: "Upload Plan Binary"
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-binary
+          path: tfplan.binary
+          retention-days: 2 # Highly temporary retention for security hygiene
+
+  # ==========================================
+  # STAGE 3: GATED TERRAFORM APPLY
+  # ==========================================
+  terraform-apply:
+    name: "3. Gated Apply"
+    needs: terraform-plan
+    # This job ONLY runs if code is merged/pushed directly to the main branch
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    # GATING MECHANISM: Links to the GitHub Environment requiring manual human approvals
+    environment:
+      name: "production-infrastructure" 
+      
+    env:
+      AWS_REGION: "us-east-1"
+      ROLE_TO_ASSUME: "arn:aws:iam::123456789012:role/github-actions-terraform-pipeline"
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "Configure AWS OIDC Credentials"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sigv4
+
+      - name: "Setup Terraform"
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: "Terraform Init"
+        run: terraform init
+
+      # Download the exact immutable plan binary generated during Stage 2
+      - name: "Download Plan Binary"
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-binary
+
+      # Apply ONLY the binary plan. If there are changes on AWS since the plan, Terraform halts.
+      - name: "Apply Verified Plan"
+        run: terraform apply -auto-approve tfplan.binary
