@@ -83,5 +83,6 @@ python3 drift-detector/detector.py drift-detector/fixtures/sample_plan.json
 
 ### Running LLM-Power Auditor
 
+export GEMINI_API_KEY="YOUR_API_KEY"
 python3 drift-detector/ai-agent/agent.py sample.diff
 python3 drift-detector/ai-agent/agent.py sample.diff
