@@ -77,7 +77,6 @@ on:
       - "environments/dev/**"
 
       - "environments/prod/**"
-```
 
 ### 3. Environment-Specific Role Isolation
 
