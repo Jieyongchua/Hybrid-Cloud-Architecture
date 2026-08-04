@@ -30,7 +30,7 @@ To satisfy the constraint that the on-premises datacenter has **no direct inboun
 
 
 
-\## 3. Mode B: Batch File Ingestion Pipeline (Push Flow)
+## 3. Mode B: Batch File Ingestion Pipeline (Push Flow)
 
 *   **Design:** A push-based model is implemented since the cloud cannot query the on-premises environment.
 
