@@ -38,11 +38,11 @@ To satisfy the constraint that the on-premises datacenter has **no direct inboun
 
 *   **AuthN \& AuthZ Boundary:**
 
-   *   **Storage Gateway:** The local agent uses temporary, short-lived security tokens to authenticate with the storage API. Instead of static API keys, tokens are derived dynamically using local certificate-based identity verification (similar to AWS IAM Roles Anywhere).
+&#x20;   *   **Storage Gateway:** The local agent uses temporary, short-lived security tokens to authenticate with the storage API. Instead of static API keys, tokens are derived dynamically using local certificate-based identity verification (similar to AWS IAM Roles Anywhere).
 
-   *   **Access Policy:** The temporary credentials grant least-privilege permissions limited strictly to write operations (`PutObject`) in a specific directory (`/incoming/`) of the ingestion bucket.
+&#x20;   *   **Access Policy:** The temporary credentials grant least-privilege permissions limited strictly to write operations (`PutObject`) in a specific directory (`/incoming/`) of the ingestion bucket.
 
-   *   **Processing \& DB Boundary:** The serverless function operates under an IAM execution role allowing it to read incoming files, validate schemas, sanitize inputs, write to the database, and move processed files to an archive directory.
+&#x20;   *   **Processing \& DB Boundary:** The serverless function operates under an IAM execution role allowing it to read incoming files, validate schemas, sanitize inputs, write to the database, and move processed files to an archive directory.
 
 
 
