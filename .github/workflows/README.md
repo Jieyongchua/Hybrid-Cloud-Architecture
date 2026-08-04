@@ -60,12 +60,13 @@ environments/
 
    └── prod.tfvars
 
+```
 
 ### 2. Parameterized Actions Workflow
 
 We modify the Github Actions workflow to detect which directory changed, dynamically running the jobs against the correct environment inputs:
 
-```
+```yaml
 
 # Example Multi-Environment Matrix / Directory mapping
 
@@ -78,6 +79,8 @@ on:
       - "environments/dev/**"
 
       - "environments/prod/**"
+
+```
 
 ### 3. Environment-Specific Role Isolation
 
