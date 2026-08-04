@@ -87,10 +87,13 @@ on:
 Each environment is bound to its own dedicated AWS Account and IAM OIDC Role:
 
 Dev Runner assumes: arn:aws:iam::dev-account-id:role/github-actions-dev
+
 Prod Runner assumes: arn:aws:iam::prod-account-id:role/github-actions-prod
 
 ### 4. Gated Controls per Environment
 
 Dev Environment: No manual approvals required. Applies instantly on push to accelerate development velocity.
+
 Staging Environment: Auto-applies upon successful automated integration test execution.
+
 Production Environment: Requires dual-peer reviews and formal approval from the Release Engineering lead inside the GitHub Environments console.
